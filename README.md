@@ -23,6 +23,12 @@ pip install -e .
 # Add an exercise
 training add pushup --reps 20
 
+# Add an exercise with sets
+training add pushup --reps 20 --sets 3
+
+# Add an exercise interactively (will prompt for reps and sets)
+training add pushup
+
 # Set a goal
 training goal pushup --daily 50
 

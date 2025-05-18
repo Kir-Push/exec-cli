@@ -239,8 +239,14 @@ def list_exercises(date, week, month, exercise, summary):
             amount = entry["amount"]
             unit = entry["unit"]
             timestamp = entry.get("timestamp", "")
+            sets = entry.get("sets", 1)
+            weight = entry.get("weight", 0)
 
             formatted_amount = format_exercise_amount(amount, unit)
+            if sets > 1:
+                formatted_amount += f" x{sets}"
+            if weight > 0:
+                formatted_amount += f" ({weight}kg)"
             table_data.append([timestamp, ex_type, formatted_amount])
 
         # Display table for this date

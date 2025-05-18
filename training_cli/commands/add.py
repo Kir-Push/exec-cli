@@ -102,13 +102,13 @@ def add(exercise_type, date, reps, time, distance, weight, sets, custom):
         if entry_weight is None and "weight" in goal_data:
             entry_weight = goal_data["weight"]
         if entry_sets is None and "sets" in goal_data:
-            entry_sets = goal_data["sets"]
+            entry_sets = None # We should ask user how many sets he did
 
     # Default values if still not set
     if entry_weight is None:
         entry_weight = 0
     if entry_sets is None:
-        entry_sets = 1
+        entry_sets = click.prompt(f"Enter number of sets for {exercise_type}", type=int, default=1)
 
     # Create entry
     entry = {
