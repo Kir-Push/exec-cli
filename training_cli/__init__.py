@@ -14,6 +14,7 @@ from training_cli.commands.goal import goal
 from training_cli.commands.list import list_exercises
 from training_cli.commands.clear import clear
 from training_cli.commands.graph import graph
+from training_cli.commands.stats import stats
 
 # Register commands
 cli.add_command(add)
@@ -21,6 +22,7 @@ cli.add_command(goal)
 cli.add_command(list_exercises)
 cli.add_command(clear)
 cli.add_command(graph)
+cli.add_command(stats)
 
 if __name__ == "__main__":
     cli()

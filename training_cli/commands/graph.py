@@ -16,7 +16,9 @@ from training_cli.utils.helpers import get_today_date, validate_date
 @click.option("--month", "-m", is_flag=True, help="Show data for the current month.")
 @click.option("--compare", "-c", is_flag=True, help="Compare multiple exercise types.")
 @click.option("--output", "-o", help="Save the graph to a file instead of displaying it.")
-def graph(exercise, days, month, compare, output):
+@click.option("--metric", type=click.Choice(["reps", "weight", "weight_per_rep"]), default="reps",
+              help="Metric to display (reps, total weight, or weight per rep).")
+def graph(exercise, days, month, compare, output, metric):
     """Visualize your exercise data."""
     data = load_data()
 
@@ -85,12 +87,31 @@ def graph(exercise, days, month, compare, output):
         for ex_type in selected_types:
             daily_totals = []
             for date in date_range:
-                total = 0
+                total_reps = 0
+                total_weight = 0
+                total_sets = 0
                 if date in data["entries"]:
                     for entry in data["entries"][date]:
                         if entry["exercise_type"] == ex_type:
-                            total += entry["amount"]
-                daily_totals.append(total)
+                            amount = entry["amount"]
+                            weight = entry.get("weight", 0)
+                            sets = entry.get("sets", 1)
+                            total_reps += amount * sets
+                            total_weight += amount * weight * sets
+                            total_sets += sets
+
+                # Determine which metric to use
+                if metric == "reps":
+                    daily_totals.append(total_reps)
+                elif metric == "weight":
+                    daily_totals.append(total_weight)
+                elif metric == "weight_per_rep":
+                    # Avoid division by zero
+                    if total_reps > 0:
+                        daily_totals.append(total_weight / total_reps)
+                    else:
+                        daily_totals.append(0)
+
             exercise_data[ex_type] = daily_totals
 
         # Create the graph
@@ -102,8 +123,17 @@ def graph(exercise, days, month, compare, output):
 
         # Add labels and title
         plt.xlabel("Date")
-        plt.ylabel("Amount")
-        plt.title(f"Exercise Comparison ({start_date_str} to {end_date_str})")
+
+        # Set y-label based on metric
+        if metric == "reps":
+            plt.ylabel("Repetitions")
+            plt.title(f"Exercise Comparison - Repetitions ({start_date_str} to {end_date_str})")
+        elif metric == "weight":
+            plt.ylabel("Total Weight (kg)")
+            plt.title(f"Exercise Comparison - Total Weight ({start_date_str} to {end_date_str})")
+        elif metric == "weight_per_rep":
+            plt.ylabel("Weight per Rep (kg)")
+            plt.title(f"Exercise Comparison - Weight per Rep ({start_date_str} to {end_date_str})")
         plt.legend()
 
         # Format x-axis dates
@@ -151,18 +181,47 @@ def graph(exercise, days, month, compare, output):
 
     # Collect data for the selected exercise type
     daily_totals = []
+    daily_weights = []
+    daily_weight_per_rep = []
+
     for date in date_range:
-        total = 0
+        total_reps = 0
+        total_weight = 0
+        total_sets = 0
         if date in data["entries"]:
             for entry in data["entries"][date]:
                 if entry["exercise_type"].lower() == exercise.lower():
-                    total += entry["amount"]
-        daily_totals.append(total)
+                    amount = entry["amount"]
+                    weight = entry.get("weight", 0)
+                    sets = entry.get("sets", 1)
+                    total_reps += amount * sets
+                    total_weight += amount * weight * sets
+                    total_sets += sets
 
-    # Check if we have any data
-    if sum(daily_totals) == 0:
-        click.echo(f"No data found for '{exercise}' in the selected date range.")
-        return
+        daily_totals.append(total_reps)
+        daily_weights.append(total_weight)
+        # Avoid division by zero
+        if total_reps > 0:
+            daily_weight_per_rep.append(total_weight / total_reps)
+        else:
+            daily_weight_per_rep.append(0)
+
+    # Determine which data to use based on metric
+    if metric == "reps":
+        plot_data = daily_totals
+        if sum(plot_data) == 0:
+            click.echo(f"No repetition data found for '{exercise}' in the selected date range.")
+            return
+    elif metric == "weight":
+        plot_data = daily_weights
+        if sum(plot_data) == 0:
+            click.echo(f"No weight data found for '{exercise}' in the selected date range.")
+            return
+    elif metric == "weight_per_rep":
+        plot_data = daily_weight_per_rep
+        if sum(plot_data) == 0:
+            click.echo(f"No weight per rep data found for '{exercise}' in the selected date range.")
+            return
 
     # Get the unit for this exercise type
     unit = data["exercise_types"].get(exercise, {}).get("unit", "reps")
@@ -171,12 +230,21 @@ def graph(exercise, days, month, compare, output):
     plt.figure(figsize=(12, 6))
 
     # Plot the data
-    plt.bar(date_objects, daily_totals, color='skyblue')
+    plt.bar(date_objects, plot_data, color='skyblue')
 
     # Add labels and title
     plt.xlabel("Date")
-    plt.ylabel(f"Amount ({unit})")
-    plt.title(f"{exercise.capitalize()} ({start_date_str} to {end_date_str})")
+
+    # Set y-label and title based on metric
+    if metric == "reps":
+        plt.ylabel(f"Repetitions ({unit})")
+        plt.title(f"{exercise.capitalize()} - Repetitions ({start_date_str} to {end_date_str})")
+    elif metric == "weight":
+        plt.ylabel("Total Weight (kg)")
+        plt.title(f"{exercise.capitalize()} - Total Weight ({start_date_str} to {end_date_str})")
+    elif metric == "weight_per_rep":
+        plt.ylabel("Weight per Rep (kg)")
+        plt.title(f"{exercise.capitalize()} - Weight per Rep ({start_date_str} to {end_date_str})")
 
     # Format x-axis dates
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
@@ -184,10 +252,52 @@ def graph(exercise, days, month, compare, output):
     plt.gcf().autofmt_xdate()
 
     # Add goal line if applicable
-    if exercise in data["goals"] and "daily" in data["goals"][exercise]:
-        daily_goal = data["goals"][exercise]["daily"]
-        plt.axhline(y=daily_goal, color='r', linestyle='--', label=f"Daily Goal ({daily_goal} {unit})")
-        plt.legend()
+    if exercise in data["goals"]:
+        goal_data = data["goals"][exercise]
+
+        # Get goal history for this exercise
+        goal_history = data.get("goal_history", {}).get(exercise, [])
+
+        # Add current goal to history for processing
+        all_goals = goal_history + [goal_data]
+
+        # Sort goals by effective date
+        all_goals.sort(key=lambda g: g.get("effective_date", "2023-01-01"))
+
+        # Find applicable goals for each date in the range
+        for i, date_obj in enumerate(date_objects):
+            date_str = date_obj.strftime("%Y-%m-%d")
+
+            # Find the most recent goal that was effective before or on this date
+            applicable_goal = None
+            for goal in all_goals:
+                effective_date = goal.get("effective_date", "2023-01-01")
+                if effective_date <= date_str:
+                    applicable_goal = goal
+
+            if applicable_goal and i == 0:  # Only add the line once
+                if metric == "reps" and "daily" in applicable_goal:
+                    daily_goal = applicable_goal["daily"]
+                    sets = applicable_goal.get("sets", 1)
+                    total_goal = daily_goal * sets
+                    plt.axhline(y=total_goal, color='r', linestyle='--', 
+                                label=f"Daily Goal ({daily_goal} {unit} x{sets})")
+                    plt.legend()
+                elif metric == "weight" and "daily" in applicable_goal:
+                    daily_goal = applicable_goal["daily"]
+                    sets = applicable_goal.get("sets", 1)
+                    weight = applicable_goal.get("weight", 0)
+                    if weight > 0:
+                        total_weight_goal = daily_goal * sets * weight
+                        plt.axhline(y=total_weight_goal, color='r', linestyle='--', 
+                                    label=f"Daily Weight Goal ({total_weight_goal}kg)")
+                        plt.legend()
+                elif metric == "weight_per_rep" and "daily" in applicable_goal:
+                    weight = applicable_goal.get("weight", 0)
+                    if weight > 0:
+                        plt.axhline(y=weight, color='r', linestyle='--', 
+                                    label=f"Weight per Rep Goal ({weight}kg)")
+                        plt.legend()
 
     # Add grid
     plt.grid(True, linestyle='--', alpha=0.7)

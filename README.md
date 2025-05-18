@@ -2,6 +2,10 @@
 
 A command-line tool for tracking exercise activities.
 
+## Note
+
+This project was created using an AI agent (Junie). I was forced to write this.
+
 ## Installation
 
 ```bash

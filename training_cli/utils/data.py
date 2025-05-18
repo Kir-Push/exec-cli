@@ -17,10 +17,11 @@ def ensure_data_file_exists():
                 "entries": {},  # Entries organized by date
                 "goals": {
                     # Default goals for common exercises
-                    "pushup": {"daily": 50},
-                    "squat": {"daily": 30},
-                    "curl": {"daily": 20}
+                    "pushup": {"daily": 50, "sets": 3, "weight": 0, "effective_date": "2023-01-01"},
+                    "squat": {"daily": 30, "sets": 3, "weight": 0, "effective_date": "2023-01-01"},
+                    "curl": {"daily": 20, "sets": 3, "weight": 5, "effective_date": "2023-01-01"}
                 },
+                "goal_history": {},
                 "exercise_types": {
                     # Predefined exercise types with their attributes
                     "pushup": {"unit": "reps", "muscle_groups": ["chest", "triceps", "shoulders"]},
@@ -46,10 +47,23 @@ def ensure_data_file_exists():
         # Add goals if not present
         if "goals" not in data:
             data["goals"] = {
-                "pushup": {"daily": 50},
-                "squat": {"daily": 30},
-                "curl": {"daily": 20}
+                "pushup": {"daily": 50, "sets": 3, "weight": 0, "effective_date": "2023-01-01"},
+                "squat": {"daily": 30, "sets": 3, "weight": 0, "effective_date": "2023-01-01"},
+                "curl": {"daily": 20, "sets": 3, "weight": 5, "effective_date": "2023-01-01"}
             }
+
+        # Add goal_history if not present
+        if "goal_history" not in data:
+            data["goal_history"] = {}
+
+        # Update existing goals with new fields if needed
+        for exercise_type, goal_data in data["goals"].items():
+            if "sets" not in goal_data:
+                goal_data["sets"] = 3
+            if "weight" not in goal_data:
+                goal_data["weight"] = 0
+            if "effective_date" not in goal_data:
+                goal_data["effective_date"] = "2023-01-01"
 
         # Add exercise_types if not present
         if "exercise_types" not in data:
