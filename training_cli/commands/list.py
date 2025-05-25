@@ -90,7 +90,9 @@ def list_exercises(date, week, month, exercise, summary):
         date_totals = calculate_total_by_exercise({entry_date: entries}, entry_date)
         for ex_type, total in date_totals.items():
             if ex_type in all_totals:
-                all_totals[ex_type] += total
+                all_totals[ex_type]["amount"] += total["amount"]
+                all_totals[ex_type]["weight_total"] += total["weight_total"]
+                all_totals[ex_type]["sets_total"] += total["sets_total"]
             else:
                 all_totals[ex_type] = total
 
