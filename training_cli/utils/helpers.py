@@ -76,13 +76,15 @@ def calculate_total_by_exercise(entries, date=None):
 
     return totals
 
-def calculate_progress(totals, goals):
+def calculate_progress(totals, goals, week=False, month=False):
     """
     Calculate progress towards goals for each exercise type.
 
     Args:
         totals (dict): Dictionary with exercise types as keys and dictionaries containing amount, weight_total, and sets_total
         goals (dict): Dictionary with exercise types as keys and goal dictionaries as values
+        week: Whether to calculate progress towards weekly goals
+        month: Whether to calculate progress towards monthly goals
 
     Returns:
         dict: A dictionary with exercise types as keys and dictionaries containing:
@@ -115,6 +117,10 @@ def calculate_progress(totals, goals):
         if daily_goal > 0 and exercise_type in totals:
             total_amount = totals[exercise_type]["amount"]
             total_goal = daily_goal * goal_sets
+            if week:
+                total_goal *= 7
+            if month:
+                total_goal *= 30
             progress[exercise_type]["reps"] = min(100, int((total_amount / total_goal) * 100))
         elif weekly_goal > 0 and exercise_type in totals:
             # Use weekly goal for progress calculation

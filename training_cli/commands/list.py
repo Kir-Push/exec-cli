@@ -154,7 +154,7 @@ def list_exercises(date, week, month, exercise, summary):
                 }
 
     # Calculate progress towards goals
-    progress = calculate_progress(all_totals, data["goals"])
+    progress = calculate_progress(all_totals, data["goals"], week, month)
 
     # If summary mode, just show the totals and progress
     if summary:
@@ -315,7 +315,7 @@ def list_exercises(date, week, month, exercise, summary):
                         "not_logged": True  # Flag to indicate this exercise hasn't been logged
                     }
 
-        date_progress = calculate_progress(date_totals, data["goals"])
+        date_progress = calculate_progress(date_totals, data["goals"], week, month)
         click.echo("\nTotals:")
         for ex_type, total_data in date_totals.items():
             unit = data["exercise_types"].get(ex_type, {}).get("unit", "reps")
